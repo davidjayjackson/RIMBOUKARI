@@ -7,6 +7,16 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+# Install once:
+# install.packages("factoextra")
+# install.packages(ggfortify)
+# install.packages(caret)
+# install.packages("tidymodels")
+#
+# install.packages("devtools)
+# -- Install package from GitHub --
+# devtools::install_github("kevinblighe/PCAtools")
+
 library(tidyverse)
 library(janitor)
 ```
