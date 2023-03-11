@@ -1,0 +1,107 @@
+---
+title: "PCA Examples"
+author: "David Jackson"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(janitor)
+```
+
+## PCA example: iris
+
+```{r}
+data(iris)
+iris_numeric <- iris[, 1:4]
+```
+```{r}
+iris_scaled <- scale(iris_numeric)
+
+```
+```{r}
+pca_result <- prcomp(iris_scaled)
+
+```
+```{r}
+# View the first few rows of the principal component scores
+head(pca_result$x)
+
+# View the first few rows of the principal component loadings
+head(pca_result$rotation)
+
+# View the proportion of variance explained by each principal component
+pca_result$sdev^2 / sum(pca_result$sdev^2)
+```
+```{r}
+iris_pca <- data.frame(pca_result$x, Species = iris$Species)
+
+ggplot(iris_pca, aes(x = PC1, y = PC2, color = Species)) +
+  geom_point() +
+  labs(x = "PC1", y = "PC2", title = "PCA of iris dataset")
+
+```
+
+
+```{r}
+biplot(pca_result)
+```
+
+#### Generate a matrix of random data with 100 rows and 5 columns:
+
+```{r}
+set.seed(123)  # for reproducibility
+my_data <- matrix(rnorm(500), nrow = 100, ncol = 5)
+
+```
+#### Scale the data:
+
+```{r}
+my_data_scaled <- scale(my_data)
+
+```
+
+#### Perform PCA on the scaled data:
+
+```{r}
+pca_result <- prcomp(my_data_scaled)
+
+```
+#### Inspect the PCA results:
+
+```{r}
+# View the first few rows of the principal component scores
+head(pca_result$x)
+
+# View the first few rows of the principal component loadings
+head(pca_result$rotation)
+
+# View the proportion of variance explained by each principal component
+pca_result$sdev^2 / sum(pca_result$sdev^2)
+
+```
+#### Visualize the results using a biplot:
+
+```{r}
+biplot(pca_result)
+
+```
+```{r}
+pca_df <- data.frame(pca_result$x, variable = paste0("Var", 1:5))
+ggplot(pca_df, aes(x = PC1, y = PC2)) +
+  geom_point() +
+  labs(x = "PC1", y = "PC2", title = "PCA plot of random data") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        axis.line = element_line(colour = "black"))
+
+```
+
+
+
+
+
