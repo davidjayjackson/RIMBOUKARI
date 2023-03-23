@@ -1,0 +1,74 @@
+---
+title: "Loan Credit Analysis"
+author: "David Jackson"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(janitor)
+library(DBI)
+library(odbc)
+library(duckdb)
+library(scales)
+```
+
+## R Markdown
+
+```{r}
+rm(list = ls())
+train <- readxl::read_xlsx("./CreditBank.xlsx",sheet ='DataTrain')
+con <- dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+dbWriteTable(con, "train", train)
+```
+
+## Begin DuckDB EDA
+#### Get a count of the number of rows in the dataset:
+
+```{r}
+dbGetQuery(con, "SELECT COUNT(*) FROM train;")
+```
+
+#### Get summary statistics for the age and Decision columns:
+
+```{r}
+dbGetQuery(con,"SELECT Decision, MIN(age) AS min_age, MAX(age) AS max_age, AVG(age) AS avg_age, MEDIAN(age) AS median_age FROM train GrOUP BY Decision;") %>%
+  ggplot(aes(x=Decision,y=median_age)) + geom_col()
+
+```
+
+#### Get a count of the number of individuals in each social category:
+
+```{r}
+dbGetQuery(con,"
+SELECT catgSocialePro, COUNT(*) AS count FROM train GROUP BY catgSocialePro;")
+
+```
+
+#### Get the average salary and net income for each sector of work:
+
+```{r}
+dbGetQuery(con,"
+SELECT secteurTravail, AVG(salary) AS avg_salary, AVG(AverageNetIncome) AS avg_net_income FROM train GROUP BY secteurTravail;")
+
+```
+
+#### Get the number of individuals whose credit application was accepted or refused:
+
+```{r}
+dbGetQuery(con,"
+           SELECT Decision, COUNT(*) AS count FROM train GROUP BY Decision;
+")
+```
+
+#### Histograms of Ages
+
+```{r}
+train$age_ceiling <- ceiling(train$age)
+train %>% ggplot(aes(x=age_ceiling)) + geom_histogram(binwidth = 10) +
+  facet_wrap(~Decision)
+
+```
+

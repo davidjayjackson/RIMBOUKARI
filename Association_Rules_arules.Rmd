@@ -1,0 +1,79 @@
+---
+title: "Association Rules(Arules)"
+author: "David Jackson"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(arules)
+library(arulesViz)
+```
+
+#### Association Rules Example (ChatGPT)
+
+Next, let's say we have a dataset of transactions from a store, where each row represents a single transaction and each column represents an item that was purchased. Here's an example dataset:
+
+```{r}
+rm(list = ls())
+data("Groceries")
+
+```
+
+#### Here's how we can use the apriori function to discover association rules in our dataset:
+
+In this example, we've set the supp parameter to 0.4, which means we only want to discover association rules that have a support (i.e., the proportion of transactions that contain the itemset) of at least 0.4. We've also set the conf parameter to 0.8, which means we only want to discover association rules that have a confidence (i.e., the proportion of transactions containing the antecedent that also contain the consequent) of 
+
+```{r}
+rules <- apriori(Groceries, parameter = list(support = 0.001, confidence = 0.5))
+
+
+```
+
+#### Finally, let's inspect the resulting rules:
+
+```{r}
+inspect(rules)
+
+```
+
+#### Visualizing the most frequent itemsets:
+
+```{r}
+itemFrequencyPlot(Groceries, topN = 10)
+
+```
+
+#### You can also visualize the frequency of itemsets of different sizes using the image function:
+
+```{r}
+itemsets <- apriori(Groceries, parameter = list(support = 0.001, maxlen = 5))
+image(itemsets)
+
+```
+#### For example, to filter the rules to only include those with a minimum of 3 items in the antecedent and a minimum lift of 3, you can use:
+
+```{r}
+rules <- subset(rules, subset = rhs %in% "whole milk" & lhs %in% c("yogurt", "curd"))
+
+rules_sorted <- sort(rules, by = "support", decreasing = TRUE)
+
+```
+
+#### Visualizing the association rules:
+
+```{r}
+plot(rules, measure = c("support", "confidence"))
+
+```
+
+#### You can also create a matrix plot to visualize the relationships between different items and itemsets in the dataset:
+
+```{r}
+itemsets <- apriori(Groceries, parameter = list(support = 0.001, maxlen = 5))
+plot(itemsets, method = "matrix", measure = "lift")
+
+```
+
