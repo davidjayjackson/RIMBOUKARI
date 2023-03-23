@@ -1,0 +1,179 @@
+---
+title: "C02 Goodies"
+author: "David Jackson"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(duckdb)
+library(janitor)
+library(scales)
+```
+
+#### Read CVS files 
+
+```{r}
+rm(list=ls())
+passenger <- read_csv("CarbonEmissions/carbon-new-passenger-vehicles.csv") %>% clean_names()
+```
+```{r}
+effciency <- read_csv("CarbonEmissions/fuel-efficiency-new-vehicles.csv") %>% clean_names()
+```
+
+#### Create DuckDB tables
+
+```{r}
+con <- dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+dbWriteTable(con, "passenger", passenger)
+dbWriteTable(con, "effciency", effciency)
+# dbDisconnect(con)
+```
+
+```{r}
+dbGetQuery(con,"SELECT * 
+           FROM passenger 
+           LIMIT 1")
+```
+```{r}
+dbGetQuery(con,"SELECT * 
+           FROM effciency 
+           LIMIT 1")
+```
+
+## Join Tables on Code and Year
+
+```{r}
+fuel_efficiency <- dbGetQuery(con,"
+           SELECT co2.entity as country,co2.year,co2.co2_per_km,
+           fuel_efficiency_per_km
+           FROM passenger co2
+           INNER JOIN effciency eff
+           ON co2.code = eff.code AND co2.year = eff.year;")
+```
+```{r}
+summary(fuel_efficiency)
+```
+
+Sure! Here's some sample SQL code to calculate summary statistics for the CO2 emissions per km and fuel efficiency per km for each country and year:
+
+```{r}
+dbGetQuery(con,"
+           SELECT
+          co2.entity AS country,co2.year,
+          AVG(co2.co2_per_km) AS avg_co2_per_km,
+          STDDEV(co2.co2_per_km) AS std_dev_co2_per_km,
+          AVG(eff.fuel_efficiency_per_km) AS avg_fuel_efficiency_per_km,
+          STDDEV(eff.fuel_efficiency_per_km) AS std_dev_fuel_efficiency_per_km
+          FROM
+          passenger co2
+          INNER JOIN effciency eff
+          ON co2.code = eff.code AND co2.year = eff.year
+          GROUP BY
+          co2.entity, co2.year;
+           ") %>%
+  ggplot(aes(x = avg_fuel_efficiency_per_km, y = avg_co2_per_km)) +
+  geom_point() +
+  facet_wrap(~country) +
+  labs(title = "CO2 Emissions vs. Fuel Efficiency by Country and Year",
+       x = "Fuel Efficiency (km/L)",
+       y = "CO2 Emissions (g/km)")
+```
+
+Visualize the data: You can create various plots to visualize the data, such as scatter plots, line graphs, and box plots. For example, you could create a scatter plot of CO2 emissions per km against fuel efficiency per km for each country and year to see if there is a correlation between the two variables.
+
+```{r}
+dbGetQuery(con,"
+SELECT
+  co2.entity AS country,
+  co2.year,
+  AVG(co2.co2_per_km) AS avg_co2_per_km,
+  STDDEV(co2.co2_per_km) AS std_dev_co2_per_km,
+  AVG(eff.fuel_efficiency_per_km) AS avg_fuel_efficiency_per_km,
+  STDDEV(eff.fuel_efficiency_per_km) AS std_dev_fuel_efficiency_per_km
+FROM
+  passenger co2
+  INNER JOIN effciency eff
+  ON co2.code = eff.code AND co2.year = eff.year
+GROUP BY
+  co2.entity, co2.year;")
+
+```
+
+```{r}
+fuel_efficiency %>% ggplot(aes(x = fuel_efficiency_per_km, y = co2_per_km, color = country)) +
+  geom_point() +
+  facet_wrap(~year) +
+  labs(title = "CO2 Emissions vs. Fuel Efficiency by Country and Year",
+       x = "Fuel Efficiency (km/L)",
+       y = "CO2 Emissions (g/km)")
+```
+
+Sure! Here's an example SQL code to calculate the z-scores for the co2_per_km column and identify any observations with a z-score greater than a certain threshold (in this case, 3):
+
+```{r}
+dbGetQuery(con,"
+           SELECT
+  entity,
+  year,
+  co2_per_km, z_score
+FROM
+  (SELECT
+     entity,
+     year,
+     co2_per_km,
+     ABS((co2_per_km - AVG(co2_per_km) OVER ()) / STDDEV(co2_per_km) OVER ()) AS z_score
+   FROM
+     passenger) subquery
+WHERE
+  z_score < 3
+ORDER BY
+  z_score DESC;
+           ") %>%
+  
+  ggplot(aes(x = year, y = co2_per_km, color = z_score > 3)) +
+  geom_point() +
+  facet_wrap(~entity, scales = "free") +
+  scale_color_manual(values = c("FALSE" = "blue", "TRUE" = "red"), name = "Outlier") +
+  labs(x = "Year", y = "CO2 per km", title = "Identifying outliers using z-scores")
+
+```
+
+Sure, here's an example SQL query that compares the average CO2 emissions per km and fuel efficiency per km across different countries and years:
+
+
+```{r}
+dbGetQuery(con,"
+           SELECT
+  co2.entity AS country,
+  co2.year,
+  AVG(co2.co2_per_km) AS avg_co2,
+  AVG(eff.fuel_efficiency_per_km) AS avg_fuel_efficiency
+FROM
+  passenger co2
+  INNER JOIN effciency eff
+    ON co2.code = eff.code AND co2.year = eff.year
+GROUP BY
+  co2.entity,
+  co2.year
+ORDER BY
+  co2.entity,
+  co2.year;")
+```
+
+```{r}
+dbGetQuery(con,"
+SELECT co2.entity AS country, co2.year, AVG(co2.co2_per_km) AS avg_co2, AVG(eff.fuel_efficiency_per_km) AS avg_fuel_efficiency
+          FROM passenger co2
+          INNER JOIN effciency eff
+          ON co2.code = eff.code AND co2.year = eff.year
+          GROUP BY co2.entity, co2.year
+          ORDER BY co2.entity, co2.year;") %>%
+# Create the ggplot
+ggplot(aes(x = country, y = avg_fuel_efficiency, fill = year)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Country", y = "Average fuel efficiency per km", fill = "Year", title = "Comparing average CO2 emissions and fuel efficiency by country and year") + coord_flip()
+```
+
