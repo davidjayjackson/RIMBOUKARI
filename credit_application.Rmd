@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(janitor)
 library(DBI)
-library(odbc)
+## library(odbc)
 library(duckdb)
 library(scales)
 ```
@@ -70,5 +70,26 @@ train$age_ceiling <- ceiling(train$age)
 train %>% ggplot(aes(x=age_ceiling)) + geom_histogram(binwidth = 10) +
   facet_wrap(~Decision)
 
+```
+```{r}
+ggplot(train) + geom_boxplot(aes(x=age_ceiling,fill=Decision)) 
+```
+
+#### Histograms of Annual Income Decision
+
+```{r}
+train$salary_ceiling <- ceiling(train$salary)
+train %>% ggplot(aes(x=salary_ceiling)) + geom_histogram(binwidth = 200) +
+  facet_wrap(~Decision)
+
+```
+
+```{r}
+train$salary_ceiling <- ceiling(train$salary)
+train %>% ggplot() + geom_histogram(aes(x=salary_ceiling,fill=Decision),binwidth = 100) 
+```
+
+```{r}
+ggplot(train) + geom_boxplot(aes(x=salary_ceiling,fill=Decision)) 
 ```
 

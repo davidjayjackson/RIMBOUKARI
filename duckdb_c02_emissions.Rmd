@@ -54,7 +54,7 @@ fuel_efficiency <- dbGetQuery(con,"
            ON co2.code = eff.code AND co2.year = eff.year;")
 ```
 ```{r}
-summary(fuel_efficiency)
+dbGetQuery("DESCRIBE SELECT * FROM fuel_efficiency;")
 ```
 
 Sure! Here's some sample SQL code to calculate summary statistics for the CO2 emissions per km and fuel efficiency per km for each country and year:
